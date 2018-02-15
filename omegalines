@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+wiener_linien_api_key = "insert here"
+
+import datetime
+import dateutil.parser
+import json
+import time
+import urllib2
+from OmegaExpansion import oledExp
+
+assert not oledExp.driverInit()
+assert not oledExp.setDisplayPower(1)
+
+while True:
+	oledExp.clear()
+	oledExp.setCursor(0, 0)
+	oledExp.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+	req = urllib2.Request("https://www.wienerlinien.at/ogd_realtime/monitor?sender=%s&rbl=4648" % wiener_linien_api_key)
+	req.add_header("Accept", "application/json")
+	req.add_header("Content-Type", "application/json")
+	try:
+		resp = json.loads(urllib2.urlopen(req).read())
+	except urllib2.HTTPError:
+		resp = None
+	if resp:
+		# datetime.datetime.strptime:
+		# ValueError: 'z' is a bad directive in format '%Y-%m-%dT%H:%M:%S.%f%z'
+		server_time = dateutil.parser.parse(resp['message']['serverTime'])
+		print(server_time)
+		monitors = resp['data']['monitors']
+		assert 1 == len(monitors)
+		lines = monitors[0]['lines']
+		assert 1 == len(lines)
+		for line in lines:
+			assert 1 == len(line['departures'])
+			for i, departure in enumerate(line['departures']['departure']):
+				if 'vehicle' in departure:
+					line_name = departure['vehicle']['name']
+					towards = departure['vehicle']['towards']
+				else:
+					line_name = line['name']
+					towards = line['towards']
+				print(line_name, towards, departure['departureTime'])
+				oledExp.setCursor(1+i, 0)
+				oledExp.write("%s %s %s" % (departure['departureTime']['countdown'], line_name, towards))
+	time.sleep(9.9)
