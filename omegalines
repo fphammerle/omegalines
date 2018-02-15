@@ -15,6 +15,22 @@ def datetime_now_local():
     return datetime.datetime.now(dateutil.tz.tzlocal())
 
 
+def format_timedelta(timedelta):
+    total_seconds = timedelta.total_seconds()
+    return '%s%d:%02d' % (
+        '-' if total_seconds < 0 else '',
+        int(abs(total_seconds) / 60),
+        abs(total_seconds) % 60,
+    )
+
+assert "0:20" == format_timedelta(datetime.timedelta(seconds=20))
+assert "1:20" == format_timedelta(datetime.timedelta(seconds=80))
+assert "2:00" == format_timedelta(datetime.timedelta(seconds=120))
+assert "-0:20" == format_timedelta(datetime.timedelta(seconds=-20))
+assert "-1:20" == format_timedelta(datetime.timedelta(seconds=-80))
+assert "-2:00" == format_timedelta(datetime.timedelta(seconds=-120))
+
+
 class Departure:
 
     def __init__(self, line, towards, predicted_time):
@@ -87,8 +103,8 @@ def run(config_path):
         if departures:
             for departure_idx, departure in enumerate(departures):
                 oledExp.setCursor(1 + departure_idx, 0)
-                oledExp.write("%03d %s %s" % (
-                    departure.predicted_timedelta.total_seconds(),
+                oledExp.write("%s %s %s" % (
+                    format_timedelta(departure.predicted_timedelta),
                     departure.line,
                     departure.towards,
                 ))
