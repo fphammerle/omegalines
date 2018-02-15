@@ -2,6 +2,7 @@
 
 import datetime
 import dateutil.parser
+import dateutil.tz
 import json
 import os
 import time
@@ -9,11 +10,22 @@ import urllib2
 import yaml
 from OmegaExpansion import oledExp
 
+
+def datetime_now_local():
+    return datetime.datetime.now(dateutil.tz.tzlocal())
+
+
 class Departure:
+
     def __init__(self, line, towards, predicted_time):
         self.line = line
         self.towards = towards
         self.predicted_time = predicted_time
+
+    @property
+    def predicted_timedelta(self):
+        return self.predicted_time - datetime_now_local()
+
 
 def request_wiener_linien_departures(api_key, rbl):
     req = urllib2.Request(
@@ -22,24 +34,31 @@ def request_wiener_linien_departures(api_key, rbl):
     )
     req.add_header("Accept", "application/json")
     req.add_header("Content-Type", "application/json")
+    req_time = datetime_now_local()
     resp = urllib2.urlopen(req)
     resp_data = json.loads(resp.read())
     # datetime.datetime.strptime:
     # ValueError: 'z' is a bad directive in format
     # '%Y-%m-%dT%H:%M:%S.%f%z'
-    server_time = dateutil.parser.parse(resp_data['message']['serverTime'])
+    server_time_delta = req_time - \
+        dateutil.parser.parse(resp_data['message']['serverTime'])
     monitors_data = resp_data['data']['monitors']
     assert 1 == len(monitors_data)
     departures = []
     for line_data in monitors_data[0]['lines']:
         assert 1 == len(line_data['departures'])
         for departure_data in line_data['departures']['departure']:
+            predicted_time_server = dateutil.parser.parse(
+                departure_data['departureTime']['timeReal'],
+            )
             departures.append(Departure(
-                line=departure_data['vehicle']['name'] if 'vehicle' in departure_data else line_data['name'],
-                towards=departure_data['vehicle']['towards'] if 'towards' in departure_data else line_data['towards'],
-                predicted_time=dateutil.parser.parse(departure_data['departureTime']['timeReal']),
+                line=departure_data['vehicle']['name']
+                    if 'vehicle' in departure_data else line_data['name'],
+                towards=departure_data['vehicle']['towards']
+                    if 'towards' in departure_data else line_data['towards'],
+                predicted_time=predicted_time_server - server_time_delta,
             ))
-    return server_time, departures
+    return departures
 
 
 def run(config_path):
@@ -52,9 +71,9 @@ def run(config_path):
     while True:
         oledExp.clear()
         oledExp.setCursor(0, 0)
-        oledExp.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
         try:
-            server_time, departures = request_wiener_linien_departures(
+            departures = request_wiener_linien_departures(
                 api_key=wiener_linien_api_key,
                 rbl=4648,
             )
@@ -63,8 +82,8 @@ def run(config_path):
         if departures:
             for departure_idx, departure in enumerate(departures):
                 oledExp.setCursor(1 + departure_idx, 0)
-                oledExp.write("%s %s %s" % (
-                    departure.predicted_time.strftime('%H:%M:%S'),
+                oledExp.write("%03d %s %s" % (
+                    departure.predicted_timedelta.total_seconds(),
                     departure.line,
                     departure.towards,
                 ))
