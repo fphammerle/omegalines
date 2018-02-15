@@ -63,6 +63,7 @@ def _init_argparser():
         dest='config_path',
         type=str,
         default=os.path.join(os.path.expanduser('~'), '.omegalines'),
+        help='default: %(default)s',
     )
     return argparser
 
