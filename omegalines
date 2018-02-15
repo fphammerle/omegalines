@@ -48,16 +48,21 @@ def request_wiener_linien_departures(api_key, rbl):
     for line_data in monitors_data[0]['lines']:
         assert 1 == len(line_data['departures'])
         for departure_data in line_data['departures']['departure']:
-            predicted_time_server = dateutil.parser.parse(
-                departure_data['departureTime']['timeReal'],
-            )
-            departures.append(Departure(
-                line=departure_data['vehicle']['name']
-                    if 'vehicle' in departure_data else line_data['name'],
-                towards=departure_data['vehicle']['towards']
-                    if 'vehicle' in departure_data else line_data['towards'],
-                predicted_time=predicted_time_server - server_time_delta,
-            ))
+            try:
+                predicted_time_server = dateutil.parser.parse(
+                    departure_data['departureTime']['timeReal'],
+                )
+            except KeyError as e:
+                print(e)
+                predicted_time_server = None
+            if predicted_time_server:
+                departures.append(Departure(
+                    line=departure_data['vehicle']['name']
+                        if 'vehicle' in departure_data else line_data['name'],
+                    towards=departure_data['vehicle']['towards']
+                        if 'vehicle' in departure_data else line_data['towards'],
+                    predicted_time=predicted_time_server - server_time_delta,
+                ))
     return departures
 
 
