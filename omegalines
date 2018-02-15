@@ -10,7 +10,7 @@ import yaml
 from OmegaExpansion import oledExp
 
 
-def wiener_linien_monitor_request(api_key, rbl):
+def request_wiener_linien_departures(api_key, rbl):
     req = urllib2.Request(
         "https://www.wienerlinien.at/ogd_realtime/monitor?sender=%s&rbl=%s"
             % (api_key, rbl),
@@ -18,7 +18,24 @@ def wiener_linien_monitor_request(api_key, rbl):
     req.add_header("Accept", "application/json")
     req.add_header("Content-Type", "application/json")
     resp = urllib2.urlopen(req)
-    return json.loads(resp.read())
+    resp_data = json.loads(resp.read())
+    # datetime.datetime.strptime:
+    # ValueError: 'z' is a bad directive in format
+    # '%Y-%m-%dT%H:%M:%S.%f%z'
+    server_time = dateutil.parser.parse(resp_data['message']['serverTime'])
+    monitors_data = resp_data['data']['monitors']
+    assert 1 == len(monitors_data)
+    departures = []
+    for line_data in monitors_data[0]['lines']:
+        assert 1 == len(line_data['departures'])
+        for departure_data in line_data['departures']['departure']:
+            if not 'vehicle' in departure_data:
+                departure_data['vehicle'] = {
+                    'name': line_data['name'],
+                    'towards': line_data['towards'],
+                }
+            departures.append(departure_data)
+    return server_time, departures
 
 
 def run(config_path):
@@ -33,35 +50,20 @@ def run(config_path):
         oledExp.setCursor(0, 0)
         oledExp.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         try:
-            resp = wiener_linien_monitor_request(
+            server_time, departures = request_wiener_linien_departures(
                 api_key=wiener_linien_api_key,
                 rbl=4648,
             )
         except urllib2.HTTPError:
-            resp = None
-        if resp:
-            # datetime.datetime.strptime:
-            # ValueError: 'z' is a bad directive in format
-            # '%Y-%m-%dT%H:%M:%S.%f%z'
-            server_time = dateutil.parser.parse(resp['message']['serverTime'])
-            print(server_time)
-            monitors = resp['data']['monitors']
-            assert 1 == len(monitors)
-            lines = monitors[0]['lines']
-            assert 1 == len(lines)
-            for line in lines:
-                assert 1 == len(line['departures'])
-                for i, departure in enumerate(line['departures']['departure']):
-                    if 'vehicle' in departure:
-                        line_name = departure['vehicle']['name']
-                        towards = departure['vehicle']['towards']
-                    else:
-                        line_name = line['name']
-                        towards = line['towards']
-                    print(line_name, towards, departure['departureTime'])
-                    oledExp.setCursor(1 + i, 0)
-                    oledExp.write("%s %s %s" %
-                                  (departure['departureTime']['countdown'], line_name, towards))
+            departures = None
+        if departures:
+            for departure_idx, departure in enumerate(departures):
+                oledExp.setCursor(1 + departure_idx, 0)
+                oledExp.write("%s %s %s" % (
+                    departure['departureTime']['countdown'],
+                    departure['vehicle']['name'],
+                    departure['vehicle']['towards'],
+                ))
         time.sleep(9.9)
 
 
