@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
-wiener_linien_api_key = "insert here"
-
 import datetime
 import dateutil.parser
 import json
-import sys
+import os
 import time
 import urllib2
+import yaml
 from OmegaExpansion import oledExp
 
-def run():
+
+def run(config_path):
+    with open(config_path, 'r') as config_file:
+        config = yaml.load(config_file.read())
+    wiener_linien_api_key = config['wiener_linien_api_key']
     assert not oledExp.driverInit()
     assert not oledExp.setDisplayPower(1)
 
@@ -28,7 +31,8 @@ def run():
             resp = None
         if resp:
             # datetime.datetime.strptime:
-            # ValueError: 'z' is a bad directive in format '%Y-%m-%dT%H:%M:%S.%f%z'
+            # ValueError: 'z' is a bad directive in format
+            # '%Y-%m-%dT%H:%M:%S.%f%z'
             server_time = dateutil.parser.parse(resp['message']['serverTime'])
             print(server_time)
             monitors = resp['data']['monitors']
@@ -50,10 +54,18 @@ def run():
                                   (departure['departureTime']['countdown'], line_name, towards))
         time.sleep(9.9)
 
+
 def _init_argparser():
     import argparse
     argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        '-c', '--config-path',
+        dest='config_path',
+        type=str,
+        default=os.path.join(os.path.expanduser('~'), '.omegalines'),
+    )
     return argparser
+
 
 def main(argv):
     argparser = _init_argparser()
@@ -62,4 +74,5 @@ def main(argv):
     return 0
 
 if __name__ == "__main__":
+    import sys
     sys.exit(main(sys.argv[1:]))
