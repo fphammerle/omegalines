@@ -10,6 +10,17 @@ import yaml
 from OmegaExpansion import oledExp
 
 
+def wiener_linien_monitor_request(api_key, rbl):
+    req = urllib2.Request(
+        "https://www.wienerlinien.at/ogd_realtime/monitor?sender=%s&rbl=%s"
+            % (api_key, rbl),
+    )
+    req.add_header("Accept", "application/json")
+    req.add_header("Content-Type", "application/json")
+    resp = urllib2.urlopen(req)
+    return json.loads(resp.read())
+
+
 def run(config_path):
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file.read())
@@ -21,12 +32,11 @@ def run(config_path):
         oledExp.clear()
         oledExp.setCursor(0, 0)
         oledExp.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        req = urllib2.Request(
-            "https://www.wienerlinien.at/ogd_realtime/monitor?sender=%s&rbl=4648" % wiener_linien_api_key)
-        req.add_header("Accept", "application/json")
-        req.add_header("Content-Type", "application/json")
         try:
-            resp = json.loads(urllib2.urlopen(req).read())
+            resp = wiener_linien_monitor_request(
+                api_key=wiener_linien_api_key,
+                rbl=4648,
+            )
         except urllib2.HTTPError:
             resp = None
         if resp:
