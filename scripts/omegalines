@@ -10,6 +10,10 @@ import urllib2
 import yaml
 from OmegaExpansion import oledExp
 
+DEFAULT_CONFIG_PATHS = [
+    os.path.join(os.path.expanduser('~'), '.omegalines'),
+    os.path.join(os.sep, 'etc', 'omegalines'),
+]
 OLED_DISPLAY_WIDTH = 21
 WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS = 10
 
@@ -90,6 +94,14 @@ def request_wiener_linien_departures(api_key, rbl):
 
 
 def run(config_path):
+    if config_path is None:
+        available_config_paths = [
+            p for p in DEFAULT_CONFIG_PATHS if os.path.exists(p)
+        ]
+        if len(available_config_paths) == 0:
+            raise Exception('found no config file')
+        config_path = available_config_paths[0]
+    print('config path: %s' % config_path)
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file.read())
     if not 'update_interval_seconds' in config['wiener_linien']:
@@ -131,8 +143,8 @@ def _init_argparser():
         '-c', '--config-path',
         dest='config_path',
         type=str,
-        default=os.path.join(os.path.expanduser('~'), '.omegalines'),
-        help='default: %(default)s',
+        default=None,
+        help='default: %r' % DEFAULT_CONFIG_PATHS,
     )
     return argparser
 
