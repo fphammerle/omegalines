@@ -1,0 +1,18 @@
+#!/bin/sh /etc/rc.common
+
+DAEMON_NAME=omegalines
+DAEMON_PATH=/usr/bin/omegalines
+PIDFILE=/var/run/$DAEMON_NAME.pid
+START=99
+
+# https://wiki.openwrt.org/doc/techref/initscripts
+
+start() {
+    echo "Starting $DAEMON_NAME daemon"
+	start-stop-daemon -S -b -p $PIDFILE -m -x $DAEMON_PATH
+}
+
+stop() {
+    echo "Stopping $DAEMON_NAME daemon"
+	start-stop-daemon -K -p $PIDFILE
+}
