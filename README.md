@@ -1,5 +1,7 @@
 # omeglines
 
+![oled display](pictures/20180216T084827.jpg)
+
 ## Configuration
 
 ```yaml
