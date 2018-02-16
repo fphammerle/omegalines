@@ -8,7 +8,8 @@ setup(
     author='Fabian Peter Hammerle',
     author_email='fabian@hammerle.me',
     url='https://git.hammerle.me/fphammerle/omeglines',
-    keywords=['public transportation', 'onion omega'],
+    keywords=['public transportation', 'onion omega',
+              'oled display', 'vienna', 'wiener linien'],
     scripts=glob.glob('scripts/*'),
     install_requires=[
         'python-dateutil',
