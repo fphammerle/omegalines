@@ -202,9 +202,15 @@ def run(config_path):
                 eva_id=config['oebb']['eva_id'],
             )
             oebb_last_update_time = time.time()
-        draw_departures(
-            departures=wiener_linien_departures + oebb_departures,
-        )
+        departures = wiener_linien_departures + oebb_departures
+        if 'offset_seconds' in config:
+            current_time = datetime_now_local()
+            departures = filter(
+                lambda d: (d.predicted_time - current_time).total_seconds()
+                            >= config['offset_seconds'],
+                departures,
+            )
+        draw_departures(departures)
         time.sleep(0.1)
 
 

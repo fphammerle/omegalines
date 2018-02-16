@@ -17,4 +17,6 @@ oebb:
   eva_id: 8101947
   # optional, default 30 seconds
   update_interval_seconds: 17
+# optional, default: disabled
+offset_seconds: 60
 ```
