@@ -143,6 +143,19 @@ def request_oebb_departures(eva_id):
     return departures
 
 
+def draw_departures(departures):
+    oledExp.setCursor(0, 0)
+    oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
+    departures.sort(key=lambda d: d.predicted_time)
+    for departure_idx, departure in enumerate(departures[:OLED_DISPLAY_HEIGHT - 1]):
+        oledExp.setCursor(1 + departure_idx, 0)
+        oled_write_line("%s %s %s" % (
+            format_timedelta(departure.predicted_timedelta),
+            departure.line.replace(' ', ''),
+            oled_encode(departure.towards),
+        ))
+
+
 def run(config_path):
     if config_path is None:
         available_config_paths = [
@@ -189,17 +202,9 @@ def run(config_path):
                 eva_id=config['oebb']['eva_id'],
             )
             oebb_last_update_time = time.time()
-        oledExp.setCursor(0, 0)
-        oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
-        departures = wiener_linien_departures + oebb_departures
-        departures.sort(key=lambda d: d.predicted_time)
-        for departure_idx, departure in enumerate(departures[:OLED_DISPLAY_HEIGHT - 1]):
-            oledExp.setCursor(1 + departure_idx, 0)
-            oled_write_line("%s %s %s" % (
-                format_timedelta(departure.predicted_timedelta),
-                departure.line.replace(' ', ''),
-                oled_encode(departure.towards),
-            ))
+        draw_departures(
+            departures=wiener_linien_departures + oebb_departures,
+        )
         time.sleep(0.1)
 
 
