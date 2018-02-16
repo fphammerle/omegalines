@@ -1,6 +1,6 @@
 # omeglines
 
-![oled display](pictures/20180216T084827.jpg)
+![oled display](pictures/20180216T130230.jpg)
 
 ## Configuration
 
