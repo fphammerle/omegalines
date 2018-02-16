@@ -10,6 +10,8 @@ import urllib2
 import yaml
 from OmegaExpansion import oledExp
 
+WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS = 10
+
 
 def datetime_now_local():
     return datetime.datetime.now(dateutil.tz.tzlocal())
@@ -85,30 +87,37 @@ def request_wiener_linien_departures(api_key, rbl):
 def run(config_path):
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file.read())
-    wiener_linien_api_key = config['wiener_linien_api_key']
+    if not 'update_interval_seconds' in config['wiener_linien']:
+        config['wiener_linien']['update_interval_seconds'] = \
+            WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS
     assert not oledExp.driverInit()
     assert not oledExp.setDisplayPower(1)
-
+    departures = []
+    wiener_linien_last_update_time = None
     while True:
+        if wiener_linien_last_update_time is None \
+                or time.time() - wiener_linien_last_update_time \
+                    > config['wiener_linien']['update_interval_seconds']:
+            print('update wiener linien')
+            try:
+                departures = request_wiener_linien_departures(
+                    api_key=config['wiener_linien']['api_key'],
+                    rbl=4648,
+                )
+                wiener_linien_last_update_time = time.time()
+            except urllib2.HTTPError as e:
+                print(e)
         oledExp.clear()
         oledExp.setCursor(0, 0)
         oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
-        try:
-            departures = request_wiener_linien_departures(
-                api_key=wiener_linien_api_key,
-                rbl=4648,
-            )
-        except urllib2.HTTPError:
-            departures = None
-        if departures:
-            for departure_idx, departure in enumerate(departures):
-                oledExp.setCursor(1 + departure_idx, 0)
-                oledExp.write("%s %s %s" % (
-                    format_timedelta(departure.predicted_timedelta),
-                    departure.line,
-                    departure.towards,
-                ))
-        time.sleep(9.9)
+        for departure_idx, departure in enumerate(departures):
+            oledExp.setCursor(1 + departure_idx, 0)
+            oledExp.write("%s %s %s" % (
+                format_timedelta(departure.predicted_timedelta),
+                departure.line,
+                departure.towards,
+            ))
+        time.sleep(0.9)
 
 
 def _init_argparser():
