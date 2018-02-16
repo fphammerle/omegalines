@@ -119,7 +119,7 @@ def run(config_path):
             try:
                 departures = request_wiener_linien_departures(
                     api_key=config['wiener_linien']['api_key'],
-                    rbl=4648,
+                    rbl=config['wiener_linien']['rbl'],
                 )
                 wiener_linien_last_update_time = time.time()
             except urllib2.HTTPError as e:
