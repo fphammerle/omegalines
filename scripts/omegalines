@@ -192,6 +192,7 @@ def run(config_path):
         oledExp.setCursor(0, 0)
         oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
         departures = wiener_linien_departures + oebb_departures
+        departures.sort(key=lambda d: d.predicted_time)
         for departure_idx, departure in enumerate(departures[:OLED_DISPLAY_HEIGHT - 1]):
             oledExp.setCursor(1 + departure_idx, 0)
             oled_write_line("%s %s %s" % (
