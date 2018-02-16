@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import HTMLParser
 import datetime
 import dateutil.parser
 import dateutil.tz
@@ -14,8 +16,14 @@ DEFAULT_CONFIG_PATHS = [
     os.path.join(os.path.expanduser('~'), '.omegalines'),
     os.path.join(os.sep, 'etc', 'omegalines'),
 ]
+OLED_DISPLAY_HEIGHT = 8
 OLED_DISPLAY_WIDTH = 21
 WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS = 10
+OEBB_DEFAULT_UPDATE_INTERVAL_SECONDS = 30
+# https://openwrt.org/docs/user-guide/system_configuration
+OEBB_TIMEZONE = dateutil.tz.tzstr('CET-1CEST,M3.5.0,M10.5.0/3')
+
+html_parser = HTMLParser.HTMLParser()
 
 
 def datetime_now_local():
@@ -39,7 +47,15 @@ assert "-2:00" == format_timedelta(datetime.timedelta(seconds=-120))
 
 
 def oled_write_line(line):
-    oledExp.write(line.ljust(OLED_DISPLAY_WIDTH, ' '))
+    oledExp.write(
+        line.ljust(OLED_DISPLAY_WIDTH, ' ')[:OLED_DISPLAY_WIDTH],
+    )
+
+
+def oled_encode(text):
+    return text.replace(u'ä', u'ue') \
+        .replace(u'ö', u'ue') \
+        .replace(u'ü', u'ue')
 
 
 class Departure:
@@ -93,6 +109,40 @@ def request_wiener_linien_departures(api_key, rbl):
     return departures
 
 
+def request_oebb_departures(eva_id):
+    req_time = datetime_now_local()
+    req = urllib2.Request(
+        'http://fahrplan.oebb.at/bin/stboard.exe/dn?' + '&'.join([
+            'L=vs_scotty.vs_liveticker',
+            'evaId=%d' % eva_id,
+            'boardType=dep',
+            'disableEquivs=yes',
+            'outputMode=tickerDataOnly',
+            'start=yes',
+        ]),
+    )
+    print('request %s' % req.get_full_url())
+    resp = urllib2.urlopen(req)
+    resp_data = json.loads(
+        resp.read().replace('journeysObj = ', ''),
+    )
+    departures = []
+    for departure_data in resp_data['journey']:
+        departure_time = datetime.datetime.strptime(departure_data['ti'], '%H:%M').replace(
+            year=req_time.year,
+            month=req_time.month,
+            day=req_time.day,
+            second=0,
+            tzinfo=OEBB_TIMEZONE,
+        )
+        departures.append(Departure(
+            line=departure_data['pr'],
+            towards=html_parser.unescape(departure_data['lastStop']),
+            predicted_time=departure_time,
+        ))
+    return departures
+
+
 def run(config_path):
     if config_path is None:
         available_config_paths = [
@@ -107,31 +157,47 @@ def run(config_path):
     if not 'update_interval_seconds' in config['wiener_linien']:
         config['wiener_linien']['update_interval_seconds'] = \
             WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS
+    if not 'oebb' in config:
+        config['oebb'] = {}
+    if not 'update_interval_seconds' in config['oebb']:
+        config['oebb']['update_interval_seconds'] = \
+            OEBB_DEFAULT_UPDATE_INTERVAL_SECONDS
     assert not oledExp.driverInit()
     assert not oledExp.setDisplayPower(1)
-    departures = []
+    wiener_linien_departures = []
     wiener_linien_last_update_time = None
+    oebb_departures = []
+    oebb_last_update_time = None
     while True:
         if wiener_linien_last_update_time is None \
                 or time.time() - wiener_linien_last_update_time \
                     > config['wiener_linien']['update_interval_seconds']:
             print('update wiener linien')
             try:
-                departures = request_wiener_linien_departures(
+                wiener_linien_departures = request_wiener_linien_departures(
                     api_key=config['wiener_linien']['api_key'],
                     rbl=config['wiener_linien']['rbl'],
                 )
                 wiener_linien_last_update_time = time.time()
             except urllib2.HTTPError as e:
                 print(e)
+        if 'eva_id' in config['oebb'] \
+                and (oebb_last_update_time is None
+                     or time.time() - oebb_last_update_time
+                     > config['oebb']['update_interval_seconds']):
+            oebb_departures = request_oebb_departures(
+                eva_id=config['oebb']['eva_id'],
+            )
+            oebb_last_update_time = time.time()
         oledExp.setCursor(0, 0)
         oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
-        for departure_idx, departure in enumerate(departures):
+        departures = wiener_linien_departures + oebb_departures
+        for departure_idx, departure in enumerate(departures[:OLED_DISPLAY_HEIGHT - 1]):
             oledExp.setCursor(1 + departure_idx, 0)
             oled_write_line("%s %s %s" % (
                 format_timedelta(departure.predicted_timedelta),
-                departure.line,
-                departure.towards,
+                departure.line.replace(' ', ''),
+                oled_encode(departure.towards),
             ))
         time.sleep(0.1)
 

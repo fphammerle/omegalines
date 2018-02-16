@@ -12,4 +12,9 @@ wiener_linien:
   # see csv-haltestellen & csv-steige
   # https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-47019828e698
   rbl: 4648
+oebb:
+  # see http://fahrplan.oebb.at/bin/stboard.exe/dn
+  eva_id: 8101947
+  # optional, default 30 seconds
+  update_interval_seconds: 17
 ```
