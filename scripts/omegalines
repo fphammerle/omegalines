@@ -127,7 +127,7 @@ def request_oebb_departures(eva_id):
         resp.read().replace('journeysObj = ', ''),
     )
     departures = []
-    for departure_data in resp_data['journey']:
+    for departure_data in resp_data.get('journey', []):
         departure_time = datetime.datetime.strptime(departure_data['ti'], '%H:%M').replace(
             year=req_time.year,
             month=req_time.month,
