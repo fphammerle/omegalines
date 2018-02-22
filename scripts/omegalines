@@ -46,6 +46,16 @@ assert "-1:20" == format_timedelta(datetime.timedelta(seconds=-80))
 assert "-2:00" == format_timedelta(datetime.timedelta(seconds=-120))
 
 
+def parse_oebb_datetime(date_str, time_str):
+    return datetime.datetime.combine(
+        datetime.datetime.strptime(date_str, '%d.%m.%Y').date(),
+        datetime.datetime.strptime(time_str, '%H:%M').time().replace(second=0),
+    ).replace(tzinfo=OEBB_TIMEZONE)
+
+assert '2018-02-22T09:46:00+01:00' == \
+    parse_oebb_datetime(u'22.02.2018', u'09:46').isoformat()
+
+
 def oled_write_line(line):
     oledExp.write(
         line.ljust(OLED_DISPLAY_WIDTH, ' ')[:OLED_DISPLAY_WIDTH],
@@ -128,17 +138,29 @@ def request_oebb_departures(eva_id):
     )
     departures = []
     for departure_data in resp_data.get('journey', []):
-        departure_time = datetime.datetime.strptime(departure_data['ti'], '%H:%M').replace(
-            year=req_time.year,
-            month=req_time.month,
-            day=req_time.day,
-            second=0,
-            tzinfo=OEBB_TIMEZONE,
-        )
+        """
+        pr: line (u'R 2323')
+        lastStop (u'Wr.Neustadt Hbf)
+        da: planned departure date (u'22.02.2018')
+        ti: planned departure time (u'09:42')
+        rt: dict if delayed, otherwise False
+        rt.dld: estimated departure date
+        rt.dlt: estimated departure time
+        """
+        if departure_data['rt']:
+            predicted_time = parse_oebb_datetime(
+                departure_data['rt']['dld'],
+                departure_data['rt']['dlt'],
+            )
+        else:
+            predicted_time = parse_oebb_datetime(
+                departure_data['da'],
+                departure_data['ti'],
+            )
         departures.append(Departure(
             line=departure_data['pr'],
             towards=html_parser.unescape(departure_data['lastStop']),
-            predicted_time=departure_time,
+            predicted_time=predicted_time,
         ))
     return departures
 
