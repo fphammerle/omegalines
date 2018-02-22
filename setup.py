@@ -8,7 +8,7 @@ setup(
     version='0.1',
     author='Fabian Peter Hammerle',
     author_email='fabian@hammerle.me',
-    url='https://git.hammerle.me/fphammerle/omeglines',
+    url='https://github.com/fphammerle/omegalines',
     keywords=['public transportation', 'onion omega',
               'oled display', 'vienna', 'wiener linien',
               'öbb', 'oebb', 'departure monitor'],
