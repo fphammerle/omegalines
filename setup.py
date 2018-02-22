@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from setuptools import setup
 
 import glob
@@ -9,7 +10,8 @@ setup(
     author_email='fabian@hammerle.me',
     url='https://git.hammerle.me/fphammerle/omeglines',
     keywords=['public transportation', 'onion omega',
-              'oled display', 'vienna', 'wiener linien'],
+              'oled display', 'vienna', 'wiener linien',
+              'öbb', 'oebb', 'departure monitor'],
     scripts=glob.glob('scripts/*'),
     install_requires=[
         'python-dateutil',
