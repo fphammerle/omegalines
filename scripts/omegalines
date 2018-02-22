@@ -53,8 +53,8 @@ def oled_write_line(line):
 
 
 def oled_encode(text):
-    return text.replace(u'ä', u'ue') \
-        .replace(u'ö', u'ue') \
+    return text.replace(u'ä', u'ae') \
+        .replace(u'ö', u'oe') \
         .replace(u'ü', u'ue')
 
 
