@@ -7,6 +7,7 @@ import dateutil.parser
 import dateutil.tz
 import json
 import os
+import sys
 import time
 import urllib2
 import yaml
@@ -144,24 +145,29 @@ def request_oebb_departures(eva_id):
         da: planned departure date (u'22.02.2018')
         ti: planned departure time (u'09:42')
         rt: dict if delayed, otherwise False
+        rt.status (e.g. u'Ausfall)
         rt.dld: estimated departure date
         rt.dlt: estimated departure time
         """
         if departure_data['rt']:
-            predicted_time = parse_oebb_datetime(
-                departure_data['rt']['dld'],
-                departure_data['rt']['dlt'],
-            )
-        else:
+            if departure_data['rt']['dlt'] == '':  # canceled?
+                predicted_time = None
+            else:  # delayed
+                predicted_time = parse_oebb_datetime(
+                    departure_data['rt']['dld'],
+                    departure_data['rt']['dlt'],
+                )
+        else:  # on time
             predicted_time = parse_oebb_datetime(
                 departure_data['da'],
                 departure_data['ti'],
             )
-        departures.append(Departure(
-            line=departure_data['pr'],
-            towards=html_parser.unescape(departure_data['lastStop']),
-            predicted_time=predicted_time,
-        ))
+        if predicted_time:
+            departures.append(Departure(
+                line=departure_data['pr'],
+                towards=html_parser.unescape(departure_data['lastStop']),
+                predicted_time=predicted_time,
+            ))
     return departures
 
 
