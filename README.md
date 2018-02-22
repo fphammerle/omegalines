@@ -1,4 +1,4 @@
-# omeglines
+# omegalines
 
 python script to use onion omega with oled expansion as
 a **departure monitor** for the **public transport** service in **Vienna/Austria**
