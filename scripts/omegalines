@@ -194,13 +194,13 @@ def run(config_path):
                 wiener_linien_last_update_time = time.time()
             except urllib2.HTTPError as e:
                 print(e)
-        if 'eva_id' in config['oebb'] \
+        if 'eva_ids' in config['oebb'] \
                 and (oebb_last_update_time is None
                      or time.time() - oebb_last_update_time
                      > config['oebb']['update_interval_seconds']):
-            oebb_departures = request_oebb_departures(
-                eva_id=config['oebb']['eva_id'],
-            )
+            oebb_departures = []
+            for eva_id in config['oebb']['eva_ids']:
+                oebb_departures.extend(request_oebb_departures(eva_id))
             oebb_last_update_time = time.time()
         departures = wiener_linien_departures + oebb_departures
         if 'offset_seconds' in config:

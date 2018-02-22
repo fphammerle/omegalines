@@ -14,7 +14,7 @@ wiener_linien:
   rbl: 4648
 oebb:
   # see http://fahrplan.oebb.at/bin/stboard.exe/dn
-  eva_id: 8101947
+  eva_ids: [8101934, 8101947]
   # optional, default 30 seconds
   update_interval_seconds: 17
 # optional, default: disabled
