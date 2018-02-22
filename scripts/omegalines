@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import HTMLParser
-import datetime
+import datetime as dt
 import dateutil.parser
 import dateutil.tz
 import json
@@ -27,7 +27,7 @@ html_parser = HTMLParser.HTMLParser()
 
 
 def datetime_now_local():
-    return datetime.datetime.now(dateutil.tz.tzlocal())
+    return dt.datetime.now(dateutil.tz.tzlocal())
 
 
 def format_timedelta(timedelta):
@@ -38,18 +38,18 @@ def format_timedelta(timedelta):
         abs(total_seconds) % 60,
     )
 
-assert "0:20" == format_timedelta(datetime.timedelta(seconds=20))
-assert "1:20" == format_timedelta(datetime.timedelta(seconds=80))
-assert "2:00" == format_timedelta(datetime.timedelta(seconds=120))
-assert "-0:20" == format_timedelta(datetime.timedelta(seconds=-20))
-assert "-1:20" == format_timedelta(datetime.timedelta(seconds=-80))
-assert "-2:00" == format_timedelta(datetime.timedelta(seconds=-120))
+assert "0:20" == format_timedelta(dt.timedelta(seconds=20))
+assert "1:20" == format_timedelta(dt.timedelta(seconds=80))
+assert "2:00" == format_timedelta(dt.timedelta(seconds=120))
+assert "-0:20" == format_timedelta(dt.timedelta(seconds=-20))
+assert "-1:20" == format_timedelta(dt.timedelta(seconds=-80))
+assert "-2:00" == format_timedelta(dt.timedelta(seconds=-120))
 
 
 def parse_oebb_datetime(date_str, time_str):
-    return datetime.datetime.combine(
-        datetime.datetime.strptime(date_str, '%d.%m.%Y').date(),
-        datetime.datetime.strptime(time_str, '%H:%M').time().replace(second=0),
+    return dt.datetime.combine(
+        dt.datetime.strptime(date_str, '%d.%m.%Y').date(),
+        dt.datetime.strptime(time_str, '%H:%M').time().replace(second=0),
     ).replace(tzinfo=OEBB_TIMEZONE)
 
 assert '2018-02-22T09:46:00+01:00' == \
@@ -90,7 +90,7 @@ def request_wiener_linien_departures(api_key, rbl):
     req_time = datetime_now_local()
     resp = urllib2.urlopen(req)
     resp_data = json.loads(resp.read())
-    # datetime.datetime.strptime:
+    # dt.datetime.strptime:
     # ValueError: 'z' is a bad directive in format
     # '%Y-%m-%dT%H:%M:%S.%f%z'
     server_time_delta = req_time - \
