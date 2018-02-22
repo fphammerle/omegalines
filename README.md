@@ -1,6 +1,16 @@
 # omeglines
 
+python script to use onion omega with oled expansion as
+a **departure monitor** for the **public transport** service in **Vienna/Austria**
+supporting *Wiener Linien* and *ÖBB*
+
 ![oled display](pictures/20180216T130230.jpg)
+
+## Hardware
+
+[onion omega2](https://onion.io/omega2/)
+
+[onion oled expansion](https://onion.io/store/oled-expansion/)
 
 ## Configuration
 
