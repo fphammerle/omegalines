@@ -12,6 +12,17 @@ supporting *Wiener Linien* and *ÖBB*
 
 [onion oled expansion](https://onion.io/store/oled-expansion/)
 
+## Installation
+
+```{s}
+opkg install python-light git pyOledExp
+wget https://bootstrap.pypa.io/get-pip.py
+python get-pip.py
+git clone git@github.com:fphammerle/omegalines.git
+pip install ./omegalines
+cp ./omegalines/config-sample.yml /etc/omegalines
+```
+
 ## Configuration
 
 See [sample config](config-sample.yml) for details
