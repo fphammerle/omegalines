@@ -14,19 +14,15 @@ supporting *Wiener Linien* and *ÖBB*
 
 ## Configuration
 
+See [sample config](config-sample.yml) for details
+
 ```yaml
 wiener_linien:
-  api_key: insert api key here
-  # optional, default 10 seconds
+  api_key: a1b2c3d4e5f6
   update_interval_seconds: 7
-  # see csv-haltestellen & csv-steige
-  # https://www.data.gv.at/katalog/dataset/add66f20-d033-4eee-b9a0-47019828e698
   rbl: 4648
 oebb:
-  # see http://fahrplan.oebb.at/bin/stboard.exe/dn
   eva_ids: [8101934, 8101947]
-  # optional, default 30 seconds
   update_interval_seconds: 17
-# optional, default: disabled
 offset_seconds: 60
 ```
