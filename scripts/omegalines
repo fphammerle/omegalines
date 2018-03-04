@@ -171,9 +171,12 @@ def request_oebb_departures(eva_id):
     return departures
 
 
-def draw_departures(departures):
+def draw_departures(departures, indicate_error=False):
     oledExp.setCursor(0, 0)
-    oledExp.write(datetime_now_local().strftime("%Y-%m-%d %H:%M:%S"))
+    headline = datetime_now_local().strftime("%Y-%m-%d %H:%M:%S")
+    if indicate_error:
+        headline += 'E'
+    oled_write_line(headline)
     departures.sort(key=lambda d: d.predicted_time)
     for departure_idx, departure in enumerate(departures[:OLED_DISPLAY_HEIGHT - 1]):
         oledExp.setCursor(1 + departure_idx, 0)
@@ -214,21 +217,29 @@ def run(config_path):
                 or time.time() - wiener_linien_last_update_time \
                     > config['wiener_linien']['update_interval_seconds']:
             print('update wiener linien')
+            wiener_linien_error = False
             try:
                 wiener_linien_departures = request_wiener_linien_departures(
                     api_key=config['wiener_linien']['api_key'],
                     rbl=config['wiener_linien']['rbl'],
                 )
-                wiener_linien_last_update_time = time.time()
-            except urllib2.HTTPError as e:
+            except urllib2.URLError as e:
+                wiener_linien_departures = []
+                wiener_linien_error = True
                 print(e)
+            wiener_linien_last_update_time = time.time()
         if 'eva_ids' in config['oebb'] \
                 and (oebb_last_update_time is None
                      or time.time() - oebb_last_update_time
                      > config['oebb']['update_interval_seconds']):
             oebb_departures = []
+            oebb_error = False
             for eva_id in config['oebb']['eva_ids']:
-                oebb_departures.extend(request_oebb_departures(eva_id))
+                try:
+                    oebb_departures.extend(request_oebb_departures(eva_id))
+                except urllib2.URLError as e:
+                    oebb_error = True
+                    print(e)
             oebb_last_update_time = time.time()
         departures = wiener_linien_departures + oebb_departures
         if 'offset_seconds' in config:
@@ -238,7 +249,10 @@ def run(config_path):
                             >= config['offset_seconds'],
                 departures,
             )
-        draw_departures(departures)
+        draw_departures(
+            departures=departures,
+            indicate_error=wiener_linien_error or oebb_error,
+        )
         time.sleep(0.1)
 
 
