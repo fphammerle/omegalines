@@ -97,7 +97,7 @@ def request_wiener_linien_departures(api_key, rbl):
     server_time_delta = req_time - \
         dateutil.parser.parse(resp_data['message']['serverTime'])
     monitors_data = resp_data['data']['monitors']
-    assert 1 == len(monitors_data)
+    assert 1 == len(monitors_data), monitors_data
     departures = []
     for line_data in monitors_data[0]['lines']:
         assert 1 == len(line_data['departures'])
