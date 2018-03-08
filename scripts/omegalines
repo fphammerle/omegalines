@@ -116,12 +116,16 @@ def departures_from_wiener_linien_line_data(line_data, server_time_delta):
     assert 1 == len(line_data['departures']), line_data
     departures = []
     for departure_data in line_data['departures']['departure']:
-        try:
+        if 'timeReal' in departure_data['departureTime']:
             predicted_time_server = dateutil.parser.parse(
                 departure_data['departureTime']['timeReal'],
             )
-        except KeyError as e:
-            raise Exception('{}\ndeparture_data: {!r}'.format(e, departure_data))
+        else:
+            predicted_time_server = dateutil.parser.parse(
+                departure_data['departureTime']['timePlanned'],
+            ) + dt.timedelta(
+                minutes=int(departure_data['departureTime']['countdown']),
+            )
         departures.append(Departure(
             line=departure_data['vehicle']['name']
                 if 'vehicle' in departure_data else line_data['name'],
