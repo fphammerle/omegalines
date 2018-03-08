@@ -97,26 +97,36 @@ def request_wiener_linien_departures(api_key, rbl):
     server_time_delta = req_time - \
         dateutil.parser.parse(resp_data['message']['serverTime'])
     monitors_data = resp_data['data']['monitors']
-    assert 1 == len(monitors_data), monitors_data
+    if len(monitors_data) == 0:
+        return []
+    else:
+        assert 1 == len(monitors_data), monitors_data
+        departures = []
+        for line_data in monitors_data[0]['lines']:
+            departures.extend(departures_from_wiener_linien_line_data(
+                line_data=line_data,
+                server_time_delta=server_time_delta,
+            ))
+        return departures
+
+
+def departures_from_wiener_linien_line_data(line_data, server_time_delta):
+    assert 1 == len(line_data['departures']), line_data
     departures = []
-    for line_data in monitors_data[0]['lines']:
-        assert 1 == len(line_data['departures'])
-        for departure_data in line_data['departures']['departure']:
-            try:
-                predicted_time_server = dateutil.parser.parse(
-                    departure_data['departureTime']['timeReal'],
-                )
-            except KeyError as e:
-                print(e)
-                predicted_time_server = None
-            if predicted_time_server:
-                departures.append(Departure(
-                    line=departure_data['vehicle']['name']
-                        if 'vehicle' in departure_data else line_data['name'],
-                    towards=departure_data['vehicle']['towards']
-                        if 'vehicle' in departure_data else line_data['towards'],
-                    predicted_time=predicted_time_server - server_time_delta,
-                ))
+    for departure_data in line_data['departures']['departure']:
+        try:
+            predicted_time_server = dateutil.parser.parse(
+                departure_data['departureTime']['timeReal'],
+            )
+        except KeyError as e:
+            raise Exception('{}\ndeparture_data: {!r}'.format(e, departure_data))
+        departures.append(Departure(
+            line=departure_data['vehicle']['name']
+                if 'vehicle' in departure_data else line_data['name'],
+            towards=departure_data['vehicle']['towards']
+                if 'vehicle' in departure_data else line_data['towards'],
+            predicted_time=predicted_time_server - server_time_delta,
+        ))
     return departures
 
 
