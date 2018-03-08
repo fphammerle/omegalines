@@ -7,6 +7,7 @@ import dateutil.parser
 import dateutil.tz
 import json
 import os
+import socket
 import sys
 import time
 import urllib2
@@ -23,6 +24,7 @@ WIENER_LINIEN_DEFAULT_UPDATE_INTERVAL_SECONDS = 10
 OEBB_DEFAULT_UPDATE_INTERVAL_SECONDS = 30
 # https://openwrt.org/docs/user-guide/system_configuration
 OEBB_TIMEZONE = dateutil.tz.tzstr('CET-1CEST,M3.5.0,M10.5.0/3')
+REQUEST_TIMEOUT_SECONDS = 10
 
 html_parser = HTMLParser.HTMLParser()
 
@@ -89,7 +91,7 @@ def request_wiener_linien_departures(api_key, rbl):
     req.add_header("Accept", "application/json")
     req.add_header("Content-Type", "application/json")
     req_time = datetime_now_local()
-    resp = urllib2.urlopen(req)
+    resp = urllib2.urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS)
     resp_data = json.loads(resp.read())
     # dt.datetime.strptime:
     # ValueError: 'z' is a bad directive in format
@@ -143,7 +145,7 @@ def request_oebb_departures(eva_id):
         ]),
     )
     print('request %s' % req.get_full_url())
-    resp = urllib2.urlopen(req)
+    resp = urllib2.urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS)
     resp_data = json.loads(
         resp.read().replace('journeysObj = ', ''),
     )
@@ -233,7 +235,7 @@ def run(config_path):
                     api_key=config['wiener_linien']['api_key'],
                     rbl=config['wiener_linien']['rbl'],
                 )
-            except urllib2.URLError as e:
+            except (urllib2.URLError, socket.timeout) as e:
                 wiener_linien_departures = []
                 wiener_linien_error = True
                 print(e)
@@ -247,7 +249,7 @@ def run(config_path):
             for eva_id in config['oebb']['eva_ids']:
                 try:
                     oebb_departures.extend(request_oebb_departures(eva_id))
-                except urllib2.URLError as e:
+                except (urllib2.URLError, socket.timeout) as e:
                     oebb_error = True
                     print(e)
             oebb_last_update_time = time.time()
